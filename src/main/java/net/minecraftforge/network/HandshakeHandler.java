@@ -8,6 +8,7 @@ package net.minecraftforge.network;
 import com.google.common.collect.Multimap;
 import com.mojang.authlib.GameProfile;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.Registry;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
@@ -320,12 +321,24 @@ public class HandshakeHandler
         }
     }
 
+    private void reset() {
+        Minecraft instance = Minecraft.getInstance();
+        if (instance.level == null) {
+            return;
+        }
+        LOGGER.debug(FMLHSMARKER, "Starting reset.");
+        net.minecraftforge.client.ForgeHooksClient.firePlayerLogout(instance.gameMode, instance.player);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.level.LevelEvent.Unload(instance.level));
+        net.minecraftforge.client.ForgeHooksClient.handleClientLevelClosing(instance.level);
+    }
+
     private boolean handleRegistryLoading(final Supplier<NetworkEvent.Context> contextSupplier) {
         // We use a countdown latch to suspend the impl thread pending the client thread processing the registry data
         AtomicBoolean successfulConnection = new AtomicBoolean(false);
         AtomicReference<Multimap<ResourceLocation, ResourceLocation>> registryMismatches = new AtomicReference<>();
         CountDownLatch block = new CountDownLatch(1);
         contextSupplier.get().enqueueWork(() -> {
+            reset();
             LOGGER.debug(FMLHSMARKER, "Injecting registry snapshot from server.");
             final Multimap<ResourceLocation, ResourceLocation> missingData = GameData.injectSnapshot(registrySnapshots, false, false);
             LOGGER.debug(FMLHSMARKER, "Snapshot injected.");
