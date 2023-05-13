@@ -179,6 +179,42 @@ public class HandshakeHandler
         return contextSupplier.get().attr(NetworkConstants.FML_HANDSHAKE_HANDLER).get();
     }
 
+    void handleModListProposalOnClient(HandshakeMessages.S2CModList serverModList, Supplier<NetworkEvent.Context> c)
+    {
+        LOGGER.debug(FMLHSMARKER, "Validating mod list [{}]", String.join(", ", serverModList.getModList()));
+        Map<ResourceLocation, String> mismatchedChannels = NetworkRegistry.validateClientChannels(serverModList.getChannels());
+        c.get().setPacketHandled(true);
+        if (!mismatchedChannels.isEmpty()) {
+            NetworkConstants.handshakeChannel.reply(new HandshakeMessages.C2SAcknowledge(), c.get());
+            return;
+        }
+        // Validate synced custom datapack registries, client cannot be missing any present on the server.
+        List<String> missingDataPackRegistries = new ArrayList<>();
+        Set<ResourceKey<? extends Registry<?>>> clientDataPackRegistries = DataPackRegistriesHooks.getSyncedCustomRegistries();
+        for (ResourceKey<? extends Registry<?>> key : serverModList.getCustomDataPackRegistries())
+        {
+            if (!clientDataPackRegistries.contains(key))
+            {
+                ResourceLocation location = key.location();
+                LOGGER.error(FMLHSMARKER, "Missing required datapack registry: {}", location);
+                missingDataPackRegistries.add(key.location().toString());
+            }
+        }
+        if (!missingDataPackRegistries.isEmpty())
+        {
+            NetworkConstants.handshakeChannel.reply(new HandshakeMessages.C2SAcknowledge(), c.get());
+            return;
+        }
+        LOGGER.debug(FMLHSMARKER, "Mod list successfully validated");
+
+        if (!serverModList.getRegistries().isEmpty()) {
+            LOGGER.debug(FMLHSMARKER, "Preparing for reset");
+            this.registriesToReceive = new HashSet<>(serverModList.getRegistries());
+            this.registrySnapshots = Maps.newHashMap();
+            LOGGER.debug(REGISTRIES, "Expecting {} registries: {}", ()->this.registriesToReceive.size(), ()->this.registriesToReceive);
+        }
+    }
+
     void handleServerModListOnClient(HandshakeMessages.S2CModList serverModList, Supplier<NetworkEvent.Context> c)
     {
         LOGGER.debug(FMLHSMARKER, "Logging into server with mod list [{}]", String.join(", ", serverModList.getModList()));
