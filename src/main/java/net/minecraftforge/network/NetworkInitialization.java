@@ -79,6 +79,35 @@ class NetworkInitialization {
         return handshakeChannel;
     }
 
+    public static SimpleChannel getProxyChannel() {
+        SimpleChannel proxyChannel = NetworkRegistry.ChannelBuilder.
+                named(NetworkConstants.FML_PROXY_RESOURCE).
+                clientAcceptedVersions(a -> true).
+                serverAcceptedVersions(a -> true).
+                networkProtocolVersion(() -> NetworkConstants.NETVERSION).
+                simpleChannel();
+
+        proxyChannel.messageBuilder(HandshakeMessages.S2CModList.class, 1, NetworkDirection.PLAY_TO_CLIENT).
+                decoder(HandshakeMessages.S2CModList::decode).
+                encoder(HandshakeMessages.S2CModList::encode).
+                consumerNetworkThread(HandshakeHandler.biConsumerFor(HandshakeHandler::handleModListProposalOnClient)).
+                add();
+
+        proxyChannel.messageBuilder(HandshakeMessages.S2CRegistry.class, 3, NetworkDirection.PLAY_TO_CLIENT).
+                decoder(HandshakeMessages.S2CRegistry::decode).
+                encoder(HandshakeMessages.S2CRegistry::encode).
+                consumerNetworkThread(HandshakeHandler.biConsumerFor(HandshakeHandler::handleRegistryMessage)).
+                add();
+
+        proxyChannel.messageBuilder(HandshakeMessages.S2CConfigData.class, 4, NetworkDirection.PLAY_TO_CLIENT).
+                decoder(HandshakeMessages.S2CConfigData::decode).
+                encoder(HandshakeMessages.S2CConfigData::encode).
+                consumerNetworkThread(HandshakeHandler.biConsumerFor(HandshakeHandler::handleConfigSync)).
+                add();
+
+        return proxyChannel;
+    }
+
     public static SimpleChannel getPlayChannel() {
          SimpleChannel playChannel = NetworkRegistry.ChannelBuilder.
                 named(NetworkConstants.FML_PLAY_RESOURCE).

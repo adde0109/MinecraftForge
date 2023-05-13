@@ -37,10 +37,12 @@ public class NetworkConstants
     static final AttributeKey<ConnectionData> FML_CONNECTION_DATA = AttributeKey.valueOf("fml:conndata");
     static final AttributeKey<ModMismatchData> FML_MOD_MISMATCH_DATA = AttributeKey.valueOf("fml:mismatchdata");
     static final ResourceLocation FML_HANDSHAKE_RESOURCE = new ResourceLocation("fml:handshake");
+    static final ResourceLocation FML_PROXY_RESOURCE = new ResourceLocation("fml:proxy");
     static final ResourceLocation FML_PLAY_RESOURCE = new ResourceLocation("fml:play");
     static final ResourceLocation MC_REGISTER_RESOURCE = new ResourceLocation("minecraft:register");
     static final ResourceLocation MC_UNREGISTER_RESOURCE = new ResourceLocation("minecraft:unregister");
     static final SimpleChannel handshakeChannel = NetworkInitialization.getHandshakeChannel();
+    static final SimpleChannel proxyChannel = NetworkInitialization.getProxyChannel();
     static final SimpleChannel playChannel = NetworkInitialization.getPlayChannel();
     static final List<EventNetworkChannel> mcRegChannels = NetworkInitialization.buildMCRegistrationChannels();
     /**
